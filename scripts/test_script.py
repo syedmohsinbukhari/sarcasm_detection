@@ -9,25 +9,10 @@ Created on Sun May  7 12:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
+"""--------------------------------------------------"""
+
 import logging
-
-def setup_logging(log_fname):
-    rootLogger = logging.getLogger()
-    rootLogger.setLevel(logging.DEBUG)
-
-    fileHandler = logging.FileHandler("{0}".format(log_fname))
-    fileFormatter = logging.Formatter("%(asctime)s [%(filename)s:%(lineno)s " +
-                                      "- %(funcName)s() ] [%(levelname)s] " +
-                                      "%(message)s")
-    fileHandler.setFormatter(fileFormatter)
-    fileHandler.setLevel(logging.INFO)
-    rootLogger.addHandler(fileHandler)
-
-    consoleHandler = logging.StreamHandler()
-    consoleFormatter = logging.Formatter("[%(levelname)s]  %(message)s")
-    consoleHandler.setFormatter(consoleFormatter)
-    consoleHandler.setLevel(logging.INFO)
-    rootLogger.addHandler(consoleHandler)
+from sarcasmdetection.utils import setup_logging
 
 setup_logging('logs/test_script.log')
 logging.info("Running script test_script.py")

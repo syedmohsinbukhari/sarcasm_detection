@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May  7 12:00:00 2018
+
+@author: elcid
+"""
+
 import logging
 
 class TestClass:

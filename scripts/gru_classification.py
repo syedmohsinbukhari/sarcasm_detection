@@ -1,20 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun May 6 12:00:00 2018
+Created on Mon May  7 12:00:00 2018
 
-@author: arkhalid
+@author: elcid
 """
 
 """ Setup logging and environment """
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-import logging
+"""--------------------------------------------------"""
 
+import logging
 from sarcasmdetection.utils import setup_logging
 
-setup_logging('logs/pytorch_test.log')
-logging.info("Running script pytorch_test.py")
+setup_logging('logs/gru_classification.log')
+logging.info("Running script gru_classification.py")
+
+"""--------------------------------------------------"""
+
+import sarcasmdetection as sd
 
 """--------------------------------------------------"""
 import torch
@@ -51,52 +56,11 @@ embedded_train_data = embedding(numerized_inputs)
 logging.info(embedded_train_data.size())
 
 """--------------------------------------------------"""
-# cell = nn.GRU(input_size=100,hidden_size=10, batch_first=True)
 
-# # initialize the hidden state.
-# hidden = (torch.randn(1, 2, 10))
-# out, hidden = cell(embedded_train_data, hidden)
-
-class SarcasmModel(nn.Module):
-    def __init__(self, embedding_dim, hidden_dim, vocab_size, embedding_vectors,
-                 output_classes, minibatch_size):
-        super(SarcasmModel, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.word_embeddings.weight.data = embedding_vectors
-        self.minibatch_size = minibatch_size
-
-        # The GRU takes word embeddings as inputs, and outputs hidden states
-        # with dimensionality hidden_dim.
-        self.rnn = nn.GRU(input_size=embedding_dim, hidden_size=hidden_dim,
-                          batch_first=True)
-
-        # The linear layer that maps from hidden state space to tag space
-        self.hidden2class = nn.Linear(hidden_dim, output_classes)
-
-        self.hidden = self.init_hidden()
-
-    def init_hidden(self):
-        # Before we've done anything, we dont have any hidden state.
-        # Refer to the Pytorch documentation to see exactly
-        # why they have this dimensionality.
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-
-        return (torch.zeros(1, self.minibatch_size, self.hidden_dim))
-
-    def forward(self, sentence):
-        embeds = self.word_embeddings(sentence)
-        rnn_out, self.hidden = self.rnn(embeds, self.hidden)
-
-        logits = self.hidden2class(rnn_out[:,-1,:].squeeze_()) # verify this
-        log_scores = F.log_softmax(logits, dim=1)
-        return log_scores
-
-"""--------------------------------------------------"""
 batch_sz = 2
 epochs = 300 # again, normally you would NOT do 300 epochs, it is toy data
 vocab_sz = len(inputs.vocab)
-model = SarcasmModel(100, 10, vocab_sz, inputs.vocab.vectors, 2, batch_sz)
+model = sd.nnmodels.GRUClassifier(100, 10, vocab_sz, inputs.vocab.vectors, 2, batch_sz)
 
 loss_function = nn.NLLLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1)
@@ -131,10 +95,3 @@ for epoch in range(epochs):
 with torch.no_grad():
     scores = model(numerized_inputs[:2])
     logging.info(scores)
-
-    # The sentence is "the dog ate the apple". i,j corresponds to score of
-    # tag j for word i. The predicted tag is the maximum scoring tag.
-    # Here, we can see the predicted sequence below is 0 1 2 0 1
-    # since 0 is index of the maximum value of row 1,
-    # 1 is the index of maximum value of row 2, etc.
-    # Which is DET NOUN VERB DET NOUN, the correct sequence!

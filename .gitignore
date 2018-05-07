@@ -110,3 +110,6 @@ venv.bak/
 *.bz2
 *.json
 *.zip
+
+# log files
+*.log

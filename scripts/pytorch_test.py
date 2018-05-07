@@ -5,6 +5,29 @@ Created on Sun May  7 12:00:00 2018
 @author: arkhalid
 """
 
+""" Setup logging """
+import logging
+
+def setup_logging(log_fname):
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(logging.DEBUG)
+
+    fileHandler = logging.FileHandler("{0}".format(log_fname))
+    fileFormatter = logging.Formatter("%(asctime)s [%(filename)s:%(lineno)s " +
+                                      "- %(funcName)s() ] [%(levelname)s] " +
+                                      "%(message)s")
+    fileHandler.setFormatter(fileFormatter)
+    fileHandler.setLevel(logging.INFO)
+    rootLogger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleFormatter = logging.Formatter("[%(levelname)s]  %(message)s")
+    consoleHandler.setFormatter(consoleFormatter)
+    consoleHandler.setLevel(logging.INFO)
+    rootLogger.addHandler(consoleHandler)
+
+setup_logging('logs/pytorch_test.log')
+
 """--------------------------------------------------"""
 import torch
 import torchtext
@@ -20,7 +43,7 @@ labels = [0 , 1]
 # use a tokenizer here for actual
 batch_size = 2
 train_data = [[word for word in utterance.split()] for utterance in utterances]
-print (train_data)
+logging.info(train_data)
 
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True, batch_first=True)
@@ -28,16 +51,17 @@ inputs.build_vocab(train_data)
 
 emb_dim = 100
 inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
-print(inputs.vocab.freqs)
-print(inputs.vocab.stoi)
+logging.info(inputs.vocab.freqs)
+logging.info(inputs.vocab.stoi)
 numericalized_inputs, seq_len = inputs.process(train_data, device=-1, train=True)
-print(numericalized_inputs.size())
+logging.info(numericalized_inputs)
+logging.info(seq_len)
 
 """--------------------------------------------------"""
 embedding = nn.Embedding(len(inputs.vocab), emb_dim)
 embedding.weight.data = inputs.vocab.vectors
 embedded_train_data = embedding(numericalized_inputs)
-print(embedded_train_data.size())
+logging.info(embedded_train_data.size())
 
 """--------------------------------------------------"""
 # cell = nn.GRU(input_size=100,hidden_size=10, batch_first=True)
@@ -91,7 +115,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.1)
 
 with torch.no_grad():
     scores = model(numericalized_inputs[:2])
-    print(scores)
+    logging.info(scores)
 
 for epoch in range(epochs):  # again, normally you would NOT do 300 epochs, it is toy data
     for start in range(0, len(utterances), batch_size):
@@ -118,7 +142,7 @@ for epoch in range(epochs):  # again, normally you would NOT do 300 epochs, it i
 
 with torch.no_grad():
     scores = model(numericalized_inputs[:2])
-    print(scores)
+    logging.info(scores)
 
     # The sentence is "the dog ate the apple".  i,j corresponds to score for tag j
     # for word i. The predicted tag is the maximum scoring tag.

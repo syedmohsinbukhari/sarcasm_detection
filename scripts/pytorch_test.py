@@ -20,12 +20,13 @@ labels = [0 , 1]
 # use a tokenizer here for actual
 batch_size = 2
 train_data = [[word for word in utterance.split()] for utterance in utterances]
-emb_dim = 100
 print (train_data)
 
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True, batch_first=True)
 inputs.build_vocab(train_data)
+
+emb_dim = 100
 inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
 print(inputs.vocab.freqs)
 print(inputs.vocab.stoi)

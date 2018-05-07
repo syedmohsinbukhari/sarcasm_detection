@@ -105,6 +105,7 @@ venv.bak/
 
 # data files
 *.txt
+*.txt.pt
 *.csv
 *.bz2
 *.json

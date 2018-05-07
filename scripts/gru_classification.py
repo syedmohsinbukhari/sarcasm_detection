@@ -37,7 +37,8 @@ labels = [0 , 1]
 train_data = [[word for word in utterance.split()] for utterance in utterances]
 
 """--------------------------------------------------"""
-inputs = torchtext.data.Field(lower=True, include_lengths= True, batch_first=True)
+inputs = torchtext.data.Field(lower=True, include_lengths= True,
+                              batch_first=True)
 inputs.build_vocab(train_data)
 
 emb_dim = 100
@@ -60,7 +61,8 @@ logging.info(embedded_train_data.size())
 batch_sz = 2
 epochs = 300 # again, normally you would NOT do 300 epochs, it is toy data
 vocab_sz = len(inputs.vocab)
-model = sd.nnmodels.GRUClassifier(100, 10, vocab_sz, inputs.vocab.vectors, 2, batch_sz)
+model = sd.nnmodels.GRUClassifier(100, 10, vocab_sz, inputs.vocab.vectors,
+                                  2, batch_sz)
 
 loss_function = nn.NLLLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1)

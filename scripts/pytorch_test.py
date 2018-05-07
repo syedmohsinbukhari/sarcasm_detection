@@ -32,7 +32,8 @@ labels = [0 , 1]
 train_data = [[word for word in utterance.split()] for utterance in utterances]
 
 """--------------------------------------------------"""
-inputs = torchtext.data.Field(lower=True, include_lengths= True, batch_first=True)
+inputs = torchtext.data.Field(lower=True, include_lengths= True,
+                              batch_first=True)
 inputs.build_vocab(train_data)
 
 emb_dim = 100

@@ -5,7 +5,10 @@ Created on Sun May  7 12:00:00 2018
 @author: arkhalid
 """
 
-""" Setup logging """
+""" Setup logging and environment """
+# simulate that sarcasmdetection is installed as a python package
+import context
+
 import logging
 
 def setup_logging(log_fname):
@@ -27,6 +30,7 @@ def setup_logging(log_fname):
     rootLogger.addHandler(consoleHandler)
 
 setup_logging('logs/pytorch_test.log')
+logging.info("Running script pytorch_test.py")
 
 """--------------------------------------------------"""
 import torch

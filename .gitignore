@@ -108,3 +108,4 @@ venv.bak/
 *.csv
 *.bz2
 *.json
+*.zip

@@ -29,16 +29,12 @@ class GRUClassifier(nn.Module):
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
-        # Before we've done anything, we dont have any hidden state.
-        # Refer to the Pytorch documentation to see exactly
-        # why they have this dimensionality.
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         return (torch.zeros(1, self.minibatch_size, self.hidden_dim))
 
     def forward(self, sentence):
         embeds = self.word_embeddings(sentence)
         rnn_out, self.hidden = self.rnn(embeds, self.hidden)
 
-        logits = self.hidden2class(rnn_out[:,-1,:].squeeze_()) # verify this
+        logits = self.hidden2class(rnn_out[:,-1,:].squeeze_())
         log_scores = F.log_softmax(logits, dim=1)
         return log_scores

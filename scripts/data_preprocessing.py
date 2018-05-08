@@ -32,6 +32,8 @@ with open('data/pol/comments.json') as f_cmnts, \
 
     for line in f_tb:
         cnt += 1
+        # if cnt>100:
+        #     break
         processed_line = line.replace('\n', '')
         processed_line = processed_line.replace('\r', '')
         all_fields = processed_line.split('|')

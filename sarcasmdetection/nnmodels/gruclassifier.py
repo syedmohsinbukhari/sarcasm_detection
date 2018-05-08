@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import logging
+
 class GRUClassifier(nn.Module):
     def __init__(self, embedding_dim, hidden_dim, vocab_size, embedding_vectors,
                  output_classes, minibatch_size):
@@ -24,17 +26,32 @@ class GRUClassifier(nn.Module):
                           batch_first=True)
 
         # The linear layer that maps from hidden state space to tag space
-        self.hidden2class = nn.Linear(hidden_dim, output_classes)
+        self.hidden2hidden = nn.Linear(hidden_dim, output_classes*10)
+        self.hidden2class = nn.Linear(output_classes*10, output_classes)
 
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
         return (torch.zeros(1, self.minibatch_size, self.hidden_dim))
 
-    def forward(self, sentence):
+    def forward(self, sentence, sent_len):
         embeds = self.word_embeddings(sentence)
-        rnn_out, self.hidden = self.rnn(embeds, self.hidden)
+        lens, indices = torch.sort(sent_len, 0, descending=True)
+        pp_seq = nn.utils.rnn.pack_padded_sequence(embeds[indices],
+                                                   lens.tolist(),
+                                                   batch_first=True)
+        rnn_out, self.hidden = self.rnn(pp_seq, self.hidden)
+        rnn_out,_ = nn.utils.rnn.pad_packed_sequence(rnn_out, batch_first=True,
+                                                   padding_value=0.0,
+                                                   total_length=None)
 
-        logits = self.hidden2class(rnn_out[:,-1,:].squeeze_())
+        _, _indices = torch.sort(indices, 0)
+        rnn_out = rnn_out[_indices]
+
+        hidden_out = self.hidden2hidden(rnn_out[:,-1,:].squeeze_())
+        hidden_out = self.hidden2hidden(self.hidden[-1])
+        hidden_out_act = F.sigmoid(hidden_out)
+
+        logits = self.hidden2class(hidden_out_act)
         log_scores = F.log_softmax(logits, dim=1)
         return log_scores

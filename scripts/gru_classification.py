@@ -20,6 +20,7 @@ import numpy as np
 import logging
 import json
 import time
+import sys
 
 import sarcasmdetection as sd
 
@@ -40,6 +41,16 @@ with open('data/pol/final_data.json') as f:
         cmnt_lbl = int(comments[k]["label"])
         labels.append(cmnt_lbl)
 
+utterances = [[word for word in utterance.split()] for utterance in utterances]
+all_utterances = utterances
+all_labels = labels
+
+utterances = all_utterances[0:6500]
+labels = all_labels[0:6500]
+
+test_utterances = all_utterances[-20:]
+test_labels = all_labels[-20:]
+
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
                               batch_first=True,
@@ -51,44 +62,61 @@ inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
 numerized_inputs, seq_len = inputs.process(utterances, device=-1, train=True)
 
 """--------------------------------------------------"""
-batch_sz = 2
-epochs = 1
+batch_sz = 20
+epochs = 10
+word_emd_sz = 100
+disp_size = 100
 vocab_sz = len(inputs.vocab)
-model = sd.nnmodels.GRUClassifier(100, 10, vocab_sz, inputs.vocab.vectors,
+model = sd.nnmodels.GRUClassifier(100, word_emd_sz, vocab_sz,
+                                  inputs.vocab.vectors,
                                   2, batch_sz)
 
 loss_function = nn.NLLLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.1)
+learning_rate = 1e-3
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 cnt = 0
+loss = float('inf')
 start_time = time.time()
 for epoch in range(epochs):
+    flg=False
     for start in range(0, len(utterances), batch_sz):
         cnt += 1
-        if cnt%100 == 0:
-            eta = ((time.time()-start_time)/cnt)*(epochs*len(utterances)-cnt)/60
+        if cnt%disp_size == 0:
+            eta = ((time.time()-start_time)/(cnt*batch_sz))*\
+                                    (epochs*len(utterances)-(cnt*batch_sz))/60
             eta_m = np.floor(eta)
             eta_s = (eta - eta_m) * 60
-            perc = (cnt/(epochs*len(utterances)))*100
+            perc = ((cnt*batch_sz)/(epochs*len(utterances)))*100
             out_str = "Progress: {:0.2f}%, ETA: {:0.0f}m{:0.0f}s".format(
                                                             perc, eta_m, eta_s)
             logging.info(out_str)
+            logging.info("loss: "+str(loss))
+            if loss.detach().numpy() < 0.1:
+                break
 
         model.zero_grad()
 
         model.hidden = model.init_hidden()
 
+        if start+batch_sz > len(utterances):
+            break
         sentence_in = numerized_inputs[start:start + batch_sz]
         targets = torch.tensor(labels[start:start + batch_sz], dtype=torch.long)
+        len_in = seq_len[start:start + batch_sz]
 
-        try:
-            log_scores = model(sentence_in)
-            loss = loss_function(log_scores, targets)
-            loss.backward()
-            optimizer.step()
-        except e:
-            logging.warn(e)
+        log_scores = model(sentence_in, len_in)
+        loss = loss_function(log_scores, targets)
+        loss.backward()
+        optimizer.step()
 
 with torch.no_grad():
-    scores = np.exp(model(numerized_inputs[:2]))
-    logging.info(scores)
+    for start in range(0, len(test_utterances), batch_sz):
+        numerized_inputs, seq_len = inputs.process(
+                                        test_utterances, device=-1, train=False)
+
+        scores = np.exp(model(numerized_inputs[start:start + batch_sz],
+                                               seq_len[start:start + batch_sz]))
+        pred_lables = np.argmax(scores.numpy(), axis=1)
+        logging.info(list(pred_lables))
+        logging.info(labels[:batch_sz])

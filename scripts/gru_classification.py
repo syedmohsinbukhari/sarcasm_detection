@@ -48,8 +48,8 @@ all_labels = labels
 utterances = all_utterances[0:6500]
 labels = all_labels[0:6500]
 
-test_utterances = all_utterances[-20:]
-test_labels = all_labels[-20:]
+test_utterances = all_utterances[-200:]
+test_labels = all_labels[-200:]
 
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
@@ -62,7 +62,9 @@ inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
 numerized_inputs, seq_len = inputs.process(utterances, device=-1, train=True)
 
 """--------------------------------------------------"""
-batch_sz = 20
+torch.device("cuda")
+
+batch_sz = 200
 epochs = 10
 word_emd_sz = 100
 disp_size = 100
@@ -92,8 +94,6 @@ for epoch in range(epochs):
                                                             perc, eta_m, eta_s)
             logging.info(out_str)
             logging.info("loss: "+str(loss))
-            if loss.detach().numpy() < 0.1:
-                break
 
         model.zero_grad()
 
@@ -102,7 +102,8 @@ for epoch in range(epochs):
         if start+batch_sz > len(utterances):
             break
         sentence_in = numerized_inputs[start:start + batch_sz]
-        targets = torch.tensor(labels[start:start + batch_sz], dtype=torch.long)
+        targets = torch.tensor(labels[start:start + batch_sz],
+                               dtype=torch.long).cuda()
         len_in = seq_len[start:start + batch_sz]
 
         log_scores = model(sentence_in, len_in)
@@ -117,6 +118,8 @@ with torch.no_grad():
 
         scores = np.exp(model(numerized_inputs[start:start + batch_sz],
                                                seq_len[start:start + batch_sz]))
-        pred_lables = np.argmax(scores.numpy(), axis=1)
-        logging.info(list(pred_lables))
-        logging.info(labels[:batch_sz])
+        pred_labels = np.argmax(scores.numpy(), axis=1)
+        test_labels = np.array(labels[:batch_sz])
+        accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
+
+        logging.info(accuracy)

@@ -17,3 +17,12 @@ def setup_logging(log_fname):
     consoleHandler.setFormatter(consoleFormatter)
     consoleHandler.setLevel(logging.INFO)
     rootLogger.addHandler(consoleHandler)
+
+def compute_accuracy(true_labels, pred_labels):
+    matches = 0
+    for i in range(len(true_labels)):
+        if true_labels[i] == pred_labels[i]:
+            matches += 1
+    accuracy = (matches/len(true_labels)) * 100
+
+    return accuracy

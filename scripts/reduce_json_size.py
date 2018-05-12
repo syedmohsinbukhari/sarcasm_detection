@@ -26,6 +26,7 @@ with open('data/main/comments.json') as f_cmnts,\
     cnt = 0
     lvl = 0
     item_cnt = 0
+    flg = False
     buf = '{'
     in_quotes = 0
     while True:
@@ -40,6 +41,7 @@ with open('data/main/comments.json') as f_cmnts,\
                     f_cmnts_new.write(buf)
                     buf = '{'
                     item_cnt += 1
+                    flg = True
                 elif chr != ' ':
                     buf += chr
             else:
@@ -61,7 +63,12 @@ with open('data/main/comments.json') as f_cmnts,\
             elif chr == '"':
                 in_quotes = 1
 
+        if ((item_cnt%100000)==0) and flg:
+            flg = False
+            logging.info("Processed {0} items".format(item_cnt))
+
         if chr == '':
             break
 
-    logging.info(buf)
+    logging.info("Processed {0} items".format(item_cnt))
+    logging.info("Script reduce_json_size.py ended")

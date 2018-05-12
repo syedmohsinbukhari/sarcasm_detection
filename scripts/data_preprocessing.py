@@ -21,19 +21,14 @@ import json
 import os
 import sys
 
-with open('data/pol/comments.json') as f_cmnts, \
-     open('data/pol/train-balanced.csv') as f_tb, \
-     open('data/pol/final_data.json', 'w') as f_final:
+with open('data/main/comments_new.json') as f_cmnts, \
+     open('data/main/train-balanced.csv') as f_tb, \
+     open('data/main/final_data.json', 'w') as f_final:
 
-    cmnts = json.load(f_cmnts)
-
-    final_data = {}
+    labels_dict = {}
     cnt = 0
-
     for line in f_tb:
         cnt += 1
-        # if cnt>100:
-        #     break
         processed_line = line.replace('\n', '')
         processed_line = processed_line.replace('\r', '')
         all_fields = processed_line.split('|')
@@ -41,19 +36,39 @@ with open('data/pol/comments.json') as f_cmnts, \
         labels = all_fields[2].split(' ')
 
         for i in range(len(resps)):
-            if cmnts[resps[i]]['author'] == "[deleted]":
+            labels_dict[resps[i]] = {'label': labels[i]}
+
+    cnt = 0
+    cnt_labels = [0, 0]
+    for line in f_cmnts:
+        cmnt_dict = json.loads(line)
+        cmnt_id = list(cmnt_dict.keys())[0]
+
+        processed_dict = {}
+        if cmnt_id in labels_dict.keys():
+            if cmnt_dict[cmnt_id]['author']=='[deleted]':
                 continue
-            final_data[resps[i]] = {'text': cmnts[resps[i]]['text'],
-                                   'author': cmnts[resps[i]]['author'],
-                                   'label': labels[i]}
+            cnt += 1
+            cmnt_label = labels_dict[cmnt_id]['label']
+            if cmnt_label == '0':
+                cnt_labels[0] = cnt_labels[0] + 1
+            elif cmnt_label == '1':
+                cnt_labels[1] = cnt_labels[1] + 1
+            processed_dict[cmnt_id] = {
+                'text': cmnt_dict[cmnt_id]['text'],
+                'author': cmnt_dict[cmnt_id]['author'],
+                'label': cmnt_label
+            }
+            json_dump = json.dumps(processed_dict)
+            f_final.write(json_dump)
+            f_final.write(os.linesep)
 
-        if cnt%100 == 0:
-            print('.', end='')
-            sys.stdout.flush()
+            if (cnt%10000)==0:
+                logging.info('Processed {0} lines'.format(cnt))
+        else:
+            continue
 
-    json_dump = json.dumps(final_data)
-    f_final.write(json_dump)
-
-    print()
-
-    logging.info(cnt)
+    logging.info('Processed {0} lines'.format(cnt))
+    logging.info('Sarcastic comments: {0}, non-sarcastic: {1}'.format(
+                                                cnt_labels[0], cnt_labels[1]))
+    logging.info("Script data_preprocessing.py ended")

@@ -32,7 +32,7 @@ logging.info("Running script gru_classification.py")
 utterances = []
 labels = []
 
-with open('data/pol/final_data.json') as f:
+with open('data/main/final_data.json') as f:
     comments = json.load(f)
     for k in comments.keys():
         cmnt_txt = comments[k]["text"]

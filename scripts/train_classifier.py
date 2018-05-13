@@ -145,8 +145,8 @@ for epoch in range(epochs):
             val_loss = loss_function(val_log_scores, torch.tensor(val_labels,
                                      dtype=torch.long).cuda())
 
-            train_losses.append(loss)
-            val_losses.append(val_loss)
+            train_losses.append(float(loss.cpu().detach().numpy()))
+            val_losses.append(float(val_loss.cpu().detach().numpy()))
 
             logging.info(out_str)
             logging.info("loss: "+str(loss))
@@ -161,7 +161,7 @@ for epoch in range(epochs):
             val_acc = infer_accuracy(model, val_labels, val_numerized_inputs,
                                      seq_len_val)
             logging.info("Validation accuracy {0}".format(val_acc))
-            val_accs.append(val_accs)
+            val_accs.append(val_acc)
 
             if val_acc > 90:
                 early_stopping_cnt += 1
@@ -190,6 +190,6 @@ stats = {
     'train_losses': train_losses,
     'val_losses': val_losses
 }
-json_dump = json.dumps(stats)
-with open('data/output/'+str(round(time.time()))+'.json') as f_stats:
-    f_stats.write(json_dump)
+
+with open('data/output/'+str(round(time.time()))+'.json', 'w') as f_stats:
+    json_dump = json.dump(stats, f_stats, indent=4, separators=(',', ': '))

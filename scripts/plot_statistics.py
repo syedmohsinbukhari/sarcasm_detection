@@ -14,9 +14,6 @@ import json
 import matplotlib.pyplot as plt
 import logging
 
-from os import listdir
-from os.path import join, isfile
-
 import sarcasmdetection as sd
 
 """--------------------------------------------------"""
@@ -24,11 +21,9 @@ sd.utils.setup_logging('logs/plot_statistics.log')
 logging.info("Running script plot_statistics.py")
 
 """--------------------------------------------------"""
-data_path = 'data/output'
-fnames = [x for x in listdir(data_path) if isfile(join(data_path, x))]
-fnames.sort()
+fname = sd.utils.get_biggest_fname('data/output')
 
-with open(join(data_path, fnames[-1])) as f:
+with open(fname) as f:
     stats = json.load(f)
 
     fig, (ax1, ax2) = plt.subplots(2, 1)

@@ -1,5 +1,8 @@
 import logging
 
+from os import listdir
+from os.path import isfile, join
+
 def setup_logging(log_fname):
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.DEBUG)
@@ -26,3 +29,8 @@ def compute_accuracy(true_labels, pred_labels):
     accuracy = (matches/len(true_labels)) * 100
 
     return accuracy
+
+def get_biggest_fname(inp_path):
+    fnames = [x for x in listdir(inp_path) if isfile(join(inp_path, x))]
+    fnames.sort()
+    return join(inp_path, fnames[-1])

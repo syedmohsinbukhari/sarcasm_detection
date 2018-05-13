@@ -183,3 +183,13 @@ accuracy = infer_accuracy(model, test_labels, test_numerized_inputs,
 logging.info("Test accuracy {0}".format(accuracy))
 
 torch.save(model, 'data/models/' + model.__label__ + '.dat')
+
+stats = {
+    'train_accuracies': train_accs,
+    'val_accuracies': val_accs,
+    'train_losses': train_losses,
+    'val_losses': val_losses
+}
+json_dump = json.dumps(stats)
+with open('data/output/'+str(round(time.time()))+'.json') as f_stats:
+    f_stats.write(json_dump)

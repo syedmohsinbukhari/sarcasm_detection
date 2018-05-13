@@ -46,7 +46,7 @@ all_utterances = utterances
 all_labels = labels
 
 logging.info("Shuffling utterances")
-np.random.seed(0)
+np.random.seed(100)
 indices = np.array(list(range(len(all_utterances))))
 np.random.shuffle(indices)
 all_utterances = [all_utterances[i] for i in indices]
@@ -196,7 +196,8 @@ stats = {
     'val_losses': val_losses
 }
 
-with open('data/output/'+str(round(time.time()))+'.json', 'w') as f_stats, \
-     open('data/output/'+str(round(time.time()))+'_test.json', 'w') as f_test:
+stats_path = 'data/output/'+str(round(time.time()))+'.json'
+test_ind_path = 'data/output/test_indices/'+str(round(time.time()))+'_test.json'
+with open(stats_path, 'w') as f_stats, open(test_ind_path, 'w') as f_test:
     json.dump(stats, f_stats, indent=4, separators=(',', ': '))
     json.dump(test_indices.tolist(), f_test, indent=4, separators=(',', ': '))

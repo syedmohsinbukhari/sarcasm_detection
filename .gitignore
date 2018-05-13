@@ -116,3 +116,6 @@ venv.bak/
 
 # trained models
 *.dat
+
+#miscellaneous
+*.directory

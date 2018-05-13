@@ -13,8 +13,8 @@ import context
 import logging
 from sarcasmdetection.utils import setup_logging
 
-setup_logging('logs/reduce_json_size.log')
-logging.info("Running script reduce_json_size.py")
+setup_logging('logs/data_reshape_json.log')
+logging.info("Running script data_reshape_json.py")
 
 """--------------------------------------------------"""
 import json
@@ -71,4 +71,4 @@ with open('data/main/comments.json') as f_cmnts,\
             break
 
     logging.info("Processed {0} items".format(item_cnt))
-    logging.info("Script reduce_json_size.py ended")
+    logging.info("Script data_reshape_json.py ended")

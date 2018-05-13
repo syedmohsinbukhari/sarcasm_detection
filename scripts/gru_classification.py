@@ -174,3 +174,5 @@ for epoch in range(epochs):
 accuracy = infer_accuracy(model, test_labels, test_numerized_inputs,
                           seq_len_test)
 logging.info("Test accuracy {0}".format(accuracy))
+
+torch.save(model, 'data/models/' + model.__label__)

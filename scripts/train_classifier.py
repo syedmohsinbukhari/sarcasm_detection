@@ -99,7 +99,7 @@ model = sd.nnmodels.GRUClassifier(100, word_emd_sz, vocab_sz,
                                   inputs.vocab.vectors, 2)
 
 loss_function = nn.NLLLoss()
-learning_rate = 1e-2
+learning_rate = 1e-3
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 train_losses = []
@@ -131,6 +131,15 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
 
+        model.hidden = model.init_hidden(val_len)
+        val_log_scores = model(val_numerized_inputs, seq_len_val)
+        val_loss = loss_function(val_log_scores, torch.tensor(val_labels,
+                                 dtype=torch.long).cuda())
+
+        train_losses.append(float(loss.cpu().detach().numpy()))
+        val_losses.append(float(val_loss.cpu().detach().numpy()))
+
+
         if cnt%disp_size == 0:
             eta = ((time.time()-start_time)/(cnt*batch_sz))*\
                                     (epochs*len(utterances)-(cnt*batch_sz))/60
@@ -140,17 +149,10 @@ for epoch in range(epochs):
             out_str = "Progress: {:0.2f}%, ETA: {:0.0f}m{:0.0f}s".format(
                                                             perc, eta_m, eta_s)
 
-            model.hidden = model.init_hidden(val_len)
-            val_log_scores = model(val_numerized_inputs, seq_len_val)
-            val_loss = loss_function(val_log_scores, torch.tensor(val_labels,
-                                     dtype=torch.long).cuda())
-
-            train_losses.append(float(loss.cpu().detach().numpy()))
-            val_losses.append(float(val_loss.cpu().detach().numpy()))
-
+            logging.info("Epoch: {0}".format(epoch))
             logging.info(out_str)
-            logging.info("loss: "+str(loss))
-            logging.info("val_loss: "+str(val_loss))
+            logging.info("loss: "+str(train_losses[-1]))
+            logging.info("val_loss: "+str(val_losses[-1]))
 
             train_acc = infer_accuracy(model,
                                        labels[start:start + batch_sz],
@@ -163,7 +165,7 @@ for epoch in range(epochs):
             logging.info("Validation accuracy {0}".format(val_acc))
             val_accs.append(val_acc)
 
-            if val_acc > 90:
+            if val_acc > 90 and epoch > 0:
                 early_stopping_cnt += 1
                 disp_str = "Incrementing early stopping counter to {0}"
                 logging.info(disp_str.format(early_stopping_cnt))

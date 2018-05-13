@@ -46,7 +46,7 @@ all_utterances = utterances
 all_labels = labels
 
 logging.info("Shuffling utterances")
-np.random.seed(666)
+np.random.seed(0)
 indices = np.array(list(range(len(all_utterances))))
 np.random.shuffle(indices)
 all_utterances = [all_utterances[i] for i in indices]
@@ -99,7 +99,7 @@ model = sd.nnmodels.GRUClassifier(100, word_emd_sz, vocab_sz,
                                   inputs.vocab.vectors, 2)
 
 loss_function = nn.NLLLoss()
-learning_rate = 1e-3
+learning_rate = 1e-2
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 train_losses = []
@@ -163,16 +163,23 @@ for epoch in range(epochs):
             logging.info("Validation accuracy {0}".format(val_acc))
             val_accs.append(val_accs)
 
-            if val_acc > 85:
+            if val_acc > 90:
                 early_stopping_cnt += 1
+                disp_str = "Incrementing early stopping counter to {0}"
+                logging.info(disp_str.format(early_stopping_cnt))
             else:
                 early_stopping_cnt = 0
 
             if early_stopping_cnt > 2:
+                logging.info("Early stopping detected")
                 break
+
+    if early_stopping_cnt > 2:
+        logging.info("Early stopping breaking the epoch loop")
+        break
 
 accuracy = infer_accuracy(model, test_labels, test_numerized_inputs,
                           seq_len_test)
 logging.info("Test accuracy {0}".format(accuracy))
 
-torch.save(model, 'data/models/' + model.__label__)
+torch.save(model, 'data/models/' + model.__label__ + '.dat')

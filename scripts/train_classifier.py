@@ -61,6 +61,7 @@ val_len = len(val_utterances)
 test_utterances = all_utterances[-1000:]
 test_labels = all_labels[-1000:]
 test_len= len(test_utterances)
+test_indices = indices[-1000:]
 
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
@@ -80,7 +81,8 @@ test_numerized_inputs, seq_len_test = inputs.process(test_utterances,
 """--------------------------------------------------"""
 def infer_accuracy(model, labels, numerized_inputs, seq_len):
     with torch.no_grad():
-        scores = np.exp(model(numerized_inputs, seq_len))
+        log_scores, _ = model(numerized_inputs, seq_len)
+        scores = np.exp(log_scores)
         pred_labels = np.argmax(scores.numpy(), axis=1)
         test_labels = np.array(labels)
 
@@ -126,19 +128,18 @@ for epoch in range(epochs):
                                dtype=torch.long).cuda()
         len_in = seq_len[start:start + batch_sz]
 
-        log_scores = model(sentence_in, len_in)
+        log_scores, _ = model(sentence_in, len_in)
         loss = loss_function(log_scores, targets)
         loss.backward()
         optimizer.step()
 
         model.hidden = model.init_hidden(val_len)
-        val_log_scores = model(val_numerized_inputs, seq_len_val)
+        val_log_scores, _ = model(val_numerized_inputs, seq_len_val)
         val_loss = loss_function(val_log_scores, torch.tensor(val_labels,
                                  dtype=torch.long).cuda())
 
         train_losses.append(float(loss.cpu().detach().numpy()))
         val_losses.append(float(val_loss.cpu().detach().numpy()))
-
 
         if cnt%disp_size == 0:
             eta = ((time.time()-start_time)/(cnt*batch_sz))*\
@@ -170,6 +171,8 @@ for epoch in range(epochs):
                 disp_str = "Incrementing early stopping counter to {0}"
                 logging.info(disp_str.format(early_stopping_cnt))
             else:
+                if early_stopping_cnt > 0:
+                    logging.info("Resetting early stop counter")
                 early_stopping_cnt = 0
 
             if early_stopping_cnt > 2:
@@ -193,5 +196,7 @@ stats = {
     'val_losses': val_losses
 }
 
-with open('data/output/'+str(round(time.time()))+'.json', 'w') as f_stats:
-    json_dump = json.dump(stats, f_stats, indent=4, separators=(',', ': '))
+with open('data/output/'+str(round(time.time()))+'.json', 'w') as f_stats, \
+     open('data/output/'+str(round(time.time()))+'_test.json', 'w') as f_test:
+    json.dump(stats, f_stats, indent=4, separators=(',', ': '))
+    json.dump(test_indices.tolist(), f_test, indent=4, separators=(',', ': '))

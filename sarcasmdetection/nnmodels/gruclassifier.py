@@ -50,4 +50,4 @@ class GRUClassifier(nn.Module):
 
         logits = self.hidden2class(self.hidden[-1])
         log_scores = F.log_softmax(logits, dim=1)
-        return log_scores
+        return log_scores, self.hidden[-1]

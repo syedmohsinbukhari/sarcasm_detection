@@ -33,23 +33,34 @@ utterances = []
 labels = []
 
 with open('data/main/final_data.json') as f:
-    comments = json.load(f)
-    for k in comments.keys():
-        cmnt_txt = comments[k]["text"]
+    for line in f:
+        cmnt_dict = json.loads(line)
+        cmnt_id = list(cmnt_dict.keys())[0]
+        cmnt_txt = cmnt_dict[cmnt_id]['text']
+        cmnt_label = int(cmnt_dict[cmnt_id]['label'])
         utterances.append(cmnt_txt)
-
-        cmnt_lbl = int(comments[k]["label"])
-        labels.append(cmnt_lbl)
+        labels.append(cmnt_label)
 
 utterances = [[word for word in utterance.split()] for utterance in utterances]
 all_utterances = utterances
 all_labels = labels
 
-utterances = all_utterances[0:6500]
-labels = all_labels[0:6500]
+logging.info("Shuffling utterances")
+np.random.seed(666)
+indices = np.array(list(range(len(all_utterances))))
+np.random.shuffle(indices)
+all_utterances = [all_utterances[i] for i in indices]
 
-test_utterances = all_utterances[-200:]
-test_labels = all_labels[-200:]
+utterances = all_utterances[0:80000]
+labels = all_labels[0:80000]
+
+val_utterances = all_utterances[-2000:-1000]
+val_labels = all_labels[-2000:-1000]
+val_len = len(val_utterances)
+
+test_utterances = all_utterances[-1000:]
+test_labels = all_labels[-1000:]
+test_len= len(test_utterances)
 
 """--------------------------------------------------"""
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
@@ -61,22 +72,41 @@ emb_dim = 100
 inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
 numerized_inputs, seq_len = inputs.process(utterances, device=-1, train=True)
 
+val_numerized_inputs, seq_len_val = inputs.process(val_utterances,
+                                                        device=-1, train=False)
+test_numerized_inputs, seq_len_test = inputs.process(test_utterances,
+                                                        device=-1, train=False)
+
+"""--------------------------------------------------"""
+def infer_accuracy(model, labels, numerized_inputs, seq_len):
+    with torch.no_grad():
+        scores = np.exp(model(numerized_inputs, seq_len))
+        pred_labels = np.argmax(scores.numpy(), axis=1)
+        test_labels = np.array(labels)
+
+        accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
+        return accuracy
+
 """--------------------------------------------------"""
 torch.device("cuda")
 
-batch_sz = 200
-epochs = 10
+batch_sz = 1000
+epochs = 5
 word_emd_sz = 100
-disp_size = 100
+disp_size = 10
 vocab_sz = len(inputs.vocab)
 model = sd.nnmodels.GRUClassifier(100, word_emd_sz, vocab_sz,
-                                  inputs.vocab.vectors,
-                                  2, batch_sz)
+                                  inputs.vocab.vectors, 2)
 
 loss_function = nn.NLLLoss()
 learning_rate = 1e-3
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
+train_losses = []
+val_losses = []
+train_accs = []
+val_accs = []
+early_stopping_cnt = 0
 cnt = 0
 loss = float('inf')
 start_time = time.time()
@@ -84,20 +114,10 @@ for epoch in range(epochs):
     flg=False
     for start in range(0, len(utterances), batch_sz):
         cnt += 1
-        if cnt%disp_size == 0:
-            eta = ((time.time()-start_time)/(cnt*batch_sz))*\
-                                    (epochs*len(utterances)-(cnt*batch_sz))/60
-            eta_m = np.floor(eta)
-            eta_s = (eta - eta_m) * 60
-            perc = ((cnt*batch_sz)/(epochs*len(utterances)))*100
-            out_str = "Progress: {:0.2f}%, ETA: {:0.0f}m{:0.0f}s".format(
-                                                            perc, eta_m, eta_s)
-            logging.info(out_str)
-            logging.info("loss: "+str(loss))
 
         model.zero_grad()
 
-        model.hidden = model.init_hidden()
+        model.hidden = model.init_hidden(batch_sz)
 
         if start+batch_sz > len(utterances):
             break
@@ -111,15 +131,46 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
 
-with torch.no_grad():
-    for start in range(0, len(test_utterances), batch_sz):
-        numerized_inputs, seq_len = inputs.process(
-                                        test_utterances, device=-1, train=False)
+        if cnt%disp_size == 0:
+            eta = ((time.time()-start_time)/(cnt*batch_sz))*\
+                                    (epochs*len(utterances)-(cnt*batch_sz))/60
+            eta_m = np.floor(eta)
+            eta_s = (eta - eta_m) * 60
+            perc = ((cnt*batch_sz)/(epochs*len(utterances)))*100
+            out_str = "Progress: {:0.2f}%, ETA: {:0.0f}m{:0.0f}s".format(
+                                                            perc, eta_m, eta_s)
 
-        scores = np.exp(model(numerized_inputs[start:start + batch_sz],
-                                               seq_len[start:start + batch_sz]))
-        pred_labels = np.argmax(scores.numpy(), axis=1)
-        test_labels = np.array(labels[:batch_sz])
-        accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
+            model.hidden = model.init_hidden(val_len)
+            val_log_scores = model(val_numerized_inputs, seq_len_val)
+            val_loss = loss_function(val_log_scores, torch.tensor(val_labels,
+                                     dtype=torch.long).cuda())
 
-        logging.info(accuracy)
+            train_losses.append(loss)
+            val_losses.append(val_loss)
+
+            logging.info(out_str)
+            logging.info("loss: "+str(loss))
+            logging.info("val_loss: "+str(val_loss))
+
+            train_acc = infer_accuracy(model,
+                                       labels[start:start + batch_sz],
+                                       sentence_in, len_in)
+            logging.info("Training accuracy {0}".format(train_acc))
+            train_accs.append(train_acc)
+
+            val_acc = infer_accuracy(model, val_labels, val_numerized_inputs,
+                                     seq_len_val)
+            logging.info("Validation accuracy {0}".format(val_acc))
+            val_accs.append(val_accs)
+
+            if val_acc > 85:
+                early_stopping_cnt += 1
+            else:
+                early_stopping_cnt = 0
+
+            if early_stopping_cnt > 2:
+                break
+
+accuracy = infer_accuracy(model, test_labels, test_numerized_inputs,
+                          seq_len_test)
+logging.info("Test accuracy {0}".format(accuracy))

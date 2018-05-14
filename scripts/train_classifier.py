@@ -21,12 +21,13 @@ import logging
 import json
 import time
 import sys
+import pickle
 
 import sarcasmdetection as sd
 
 """--------------------------------------------------"""
-sd.utils.setup_logging('logs/gru_classification.log')
-logging.info("Running script gru_classification.py")
+sd.utils.setup_logging('logs/train_classifier.log')
+logging.info("Running script train_classifier.py")
 
 """--------------------------------------------------"""
 utterances = []
@@ -46,7 +47,7 @@ all_utterances = utterances
 all_labels = labels
 
 logging.info("Shuffling utterances")
-np.random.seed(100)
+np.random.seed(123)
 indices = np.array(list(range(len(all_utterances))))
 np.random.shuffle(indices)
 all_utterances = [all_utterances[i] for i in indices]
@@ -67,11 +68,11 @@ test_indices = indices[-1000:]
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
                               batch_first=True,
                               tokenize=torchtext.data.get_tokenizer('spacy'))
-inputs.build_vocab(utterances)
+inputs.build_vocab(all_utterances)
 
 emb_dim = 100
 inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
-numerized_inputs, seq_len = inputs.process(utterances, device=-1, train=True)
+numerized_inputs, seq_len = inputs.process(utterances, device=-1, train=False)
 
 val_numerized_inputs, seq_len_val = inputs.process(val_utterances,
                                                         device=-1, train=False)
@@ -81,13 +82,13 @@ test_numerized_inputs, seq_len_test = inputs.process(test_utterances,
 """--------------------------------------------------"""
 def infer_accuracy(model, labels, numerized_inputs, seq_len):
     with torch.no_grad():
-        log_scores, _ = model(numerized_inputs, seq_len)
+        log_scores, hidden_out = model(numerized_inputs, seq_len)
         scores = np.exp(log_scores)
         pred_labels = np.argmax(scores.numpy(), axis=1)
         test_labels = np.array(labels)
 
         accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
-        return accuracy
+        return accuracy, hidden_out.cpu().detach().numpy()
 
 """--------------------------------------------------"""
 torch.device("cuda")
@@ -155,13 +156,13 @@ for epoch in range(epochs):
             logging.info("loss: "+str(train_losses[-1]))
             logging.info("val_loss: "+str(val_losses[-1]))
 
-            train_acc = infer_accuracy(model,
+            train_acc, _ = infer_accuracy(model,
                                        labels[start:start + batch_sz],
                                        sentence_in, len_in)
             logging.info("Training accuracy {0}".format(train_acc))
             train_accs.append(train_acc)
 
-            val_acc = infer_accuracy(model, val_labels, val_numerized_inputs,
+            val_acc, _ = infer_accuracy(model, val_labels, val_numerized_inputs,
                                      seq_len_val)
             logging.info("Validation accuracy {0}".format(val_acc))
             val_accs.append(val_acc)
@@ -183,11 +184,13 @@ for epoch in range(epochs):
         logging.info("Early stopping breaking the epoch loop")
         break
 
-accuracy = infer_accuracy(model, test_labels, test_numerized_inputs,
-                          seq_len_test)
+accuracy, test_embds = infer_accuracy(model, test_labels, test_numerized_inputs,
+                                      seq_len_test)
 logging.info("Test accuracy {0}".format(accuracy))
 
 torch.save(model, 'data/models/' + model.__label__ + '.dat')
+pickle.dump(test_embds, open('data/models/test_embeddings.pkl', 'wb'))
+pickle.dump(test_labels, open('data/models/test_labels.pkl', 'wb'))
 
 stats = {
     'train_accuracies': train_accs,
@@ -201,3 +204,5 @@ test_ind_path = 'data/output/test_indices/'+str(round(time.time()))+'_test.json'
 with open(stats_path, 'w') as f_stats, open(test_ind_path, 'w') as f_test:
     json.dump(stats, f_stats, indent=4, separators=(',', ': '))
     json.dump(test_indices.tolist(), f_test, indent=4, separators=(',', ': '))
+
+logging.info("Finished script train_classifier.py")

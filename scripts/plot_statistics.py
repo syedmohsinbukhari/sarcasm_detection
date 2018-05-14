@@ -41,3 +41,5 @@ with open(fname) as f:
     plt.tight_layout()
 
     plt.show()
+
+logging.info("Finished script plot_statistics.py")

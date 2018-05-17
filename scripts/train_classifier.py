@@ -50,7 +50,8 @@ logging.info("Shuffling utterances")
 np.random.seed(123)
 indices = np.array(list(range(len(all_utterances))))
 np.random.shuffle(indices)
-all_utterances = [all_utterances[i] for i in indices]
+all_utterances = [all_utterances[i] for i in indices
+all_labels = [all_labels[i] for i in indices]
 
 utterances = all_utterances[0:80000]
 labels = all_labels[0:80000]

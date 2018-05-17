@@ -8,7 +8,7 @@ def setup_logging(log_fname=''):
     rootLogger.setLevel(logging.DEBUG)
 
     if log_fname != '':
-        format_string = "%(asctime)s [%(filename)s:%(lineno)s - "+
+        format_string = "%(asctime)s [%(filename)s:%(lineno)s - "+\
                         "%(funcName)s() ] [%(levelname)s] %(message)s"
         fileHandler = logging.FileHandler("{0}".format(log_fname))
         fileFormatter = logging.Formatter(format_string)

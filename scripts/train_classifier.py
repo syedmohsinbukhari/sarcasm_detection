@@ -201,8 +201,9 @@ stats = {
     'val_losses': val_losses
 }
 
-stats_path = 'data/output/'+str(round(time.time()))+'.json'
-test_ind_path = 'data/output/test_indices/'+str(round(time.time()))+'_test.json'
+curr_time = str(round(time.time()))
+stats_path = 'data/output/'+curr_time+'.json'
+test_ind_path = 'data/output/test_indices/'+curr_time+'_test.json'
 with open(stats_path, 'w') as f_stats, open(test_ind_path, 'w') as f_test:
     json.dump(stats, f_stats, indent=4, separators=(',', ': '))
     json.dump(test_indices.tolist(), f_test, indent=4, separators=(',', ': '))

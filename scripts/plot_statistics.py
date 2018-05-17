@@ -9,18 +9,18 @@ Created on Mon May  13 00:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import json
 import matplotlib.pyplot as plt
 import logging
 
 import sarcasmdetection as sd
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 sd.utils.setup_logging('logs/plot_statistics.log')
 logging.info("Running script plot_statistics.py")
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 fname = sd.utils.get_biggest_fname('data/output')
 
 with open(fname) as f:

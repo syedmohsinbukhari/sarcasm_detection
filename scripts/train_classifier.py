@@ -9,7 +9,7 @@ Created on Mon May  7 12:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import torch
 import torchtext
 import torch.nn as nn
@@ -25,11 +25,11 @@ import pickle
 
 import sarcasmdetection as sd
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 sd.utils.setup_logging('logs/train_classifier.log')
 logging.info("Running script train_classifier.py")
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 utterances = []
 labels = []
 
@@ -64,7 +64,7 @@ test_labels = all_labels[-1000:]
 test_len= len(test_utterances)
 test_indices = indices[-1000:]
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
                               batch_first=True,
                               tokenize=torchtext.data.get_tokenizer('spacy'))
@@ -79,7 +79,7 @@ val_numerized_inputs, seq_len_val = inputs.process(val_utterances,
 test_numerized_inputs, seq_len_test = inputs.process(test_utterances,
                                                         device=-1, train=False)
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 def infer_accuracy(model, labels, numerized_inputs, seq_len):
     with torch.no_grad():
         log_scores, hidden_out = model(numerized_inputs, seq_len)
@@ -90,7 +90,7 @@ def infer_accuracy(model, labels, numerized_inputs, seq_len):
         accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
         return accuracy, hidden_out.cpu().detach().numpy()
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 torch.device("cuda")
 
 batch_sz = 1000
@@ -184,6 +184,7 @@ for epoch in range(epochs):
         logging.info("Early stopping breaking the epoch loop")
         break
 
+#%%-----------------------------------------------------------------------------
 accuracy, test_embds = infer_accuracy(model, test_labels, test_numerized_inputs,
                                       seq_len_test)
 logging.info("Test accuracy {0}".format(accuracy))
@@ -192,6 +193,7 @@ torch.save(model, 'data/models/' + model.__label__ + '.dat')
 pickle.dump(test_embds, open('data/models/test_embeddings.pkl', 'wb'))
 pickle.dump(test_labels, open('data/models/test_labels.pkl', 'wb'))
 
+#%%-----------------------------------------------------------------------------
 stats = {
     'train_accuracies': train_accs,
     'val_accuracies': val_accs,

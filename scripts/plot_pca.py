@@ -9,7 +9,7 @@ Created on Mon May  7 12:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import torch
 import torchtext
 
@@ -20,11 +20,11 @@ import matplotlib.pyplot as plt
 
 import sarcasmdetection as sd
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 sd.utils.setup_logging('logs/plot_pca.log')
 logging.info("Running script plot_pca.py")
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 test_embeddings = pickle.load(open('data/models/test_embeddings.pkl', 'rb'))
 test_labels = pickle.load(open('data/models/test_labels.pkl', 'rb'))
 
@@ -63,5 +63,5 @@ plt.legend()
 # plt.title('PCA of IRIS dataset')
 plt.show()
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 logging.info("Finished script plot_pca.py")

@@ -9,14 +9,14 @@ Created on Mon May  7 12:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import logging
 from sarcasmdetection.utils import setup_logging
 
 setup_logging('logs/test_script.log')
 logging.info("Running script test_script.py")
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import json
 import os
 import sys

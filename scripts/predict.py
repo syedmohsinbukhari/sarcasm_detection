@@ -9,7 +9,7 @@ Created on Mon May  7 12:00:00 2018
 # simulate that sarcasmdetection is installed as a python package
 import context
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 import torch
 import torchtext
 
@@ -22,11 +22,11 @@ import pickle
 
 import sarcasmdetection as sd
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 sd.utils.setup_logging('logs/predict.log')
 logging.info("Running script predict.py")
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 utterances = []
 labels = []
 
@@ -50,7 +50,7 @@ with open(fname) as f:
 test_utterances = [utterances[i] for i in test_indices]
 test_labels = [labels[i] for i in test_indices]
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 inputs = torchtext.data.Field(lower=True, include_lengths= True,
                               batch_first=True,
                               tokenize=torchtext.data.get_tokenizer('spacy'))
@@ -62,7 +62,7 @@ inputs.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=emb_dim))
 test_numerized_inputs, seq_len_test = inputs.process(test_utterances,
                                                         device=-1, train=False)
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 def infer_accuracy(model, labels, numerized_inputs, seq_len):
     with torch.no_grad():
         log_scores, hidden_final = model(numerized_inputs, seq_len)
@@ -73,7 +73,7 @@ def infer_accuracy(model, labels, numerized_inputs, seq_len):
         accuracy = sd.utils.compute_accuracy(pred_labels, test_labels)
         return accuracy, hidden_final
 
-"""--------------------------------------------------"""
+#%%-----------------------------------------------------------------------------
 torch.device("cuda")
 
 model = torch.load('data/models/GRUClassifier_new_backup_3.dat')

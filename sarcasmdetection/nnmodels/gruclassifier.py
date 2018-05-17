@@ -33,7 +33,7 @@ class GRUClassifier(nn.Module):
         return (torch.zeros(1, minibatchsize, self.hidden_dim).cuda())
 
     def forward(self, sentence, sent_len):
-        embeds = self.word_embeddings(sentence)
+        embeds = self.word_embeddings(sentence.cuda())
         lens, indices = torch.sort(sent_len, 0, descending=True)
         pp_seq = nn.utils.rnn.pack_padded_sequence(embeds[indices],
                                                    lens.tolist(),

@@ -92,7 +92,7 @@ def infer_accuracy(model, labels, numerized_inputs, seq_len):
         return accuracy, hidden_out.cpu().detach().numpy()
 
 #%%-----------------------------------------------------------------------------
-torch.device("cuda")
+cuda0 = torch.device("cuda:0")
 
 batch_sz = 1000
 epochs = 5
@@ -101,7 +101,7 @@ disp_size = 10
 vocab_sz = len(inputs.vocab)
 model = sd.nnmodels.GRUClassifier(100, word_emd_sz, vocab_sz,
                                   inputs.vocab.vectors, 2)
-
+model.cuda(device=cuda0)
 loss_function = nn.NLLLoss()
 learning_rate = 1e-3
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
